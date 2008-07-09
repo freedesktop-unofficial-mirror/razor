@@ -17,6 +17,8 @@ bin_PROGRAMS = razor
 noinst_PROGRAMS = rpm
 check_PROGRAMS = test-driver
 
+EXTRA_DIST = test.xml
+
 razor_SOURCES = main.c import-rpmdb.c import-yum.c
 razor_LDADD = $(RPM_LIBS) $(EXPAT_LIBS) $(CURL_LIBS) $(top_builddir)/librazor/librazor.la
 

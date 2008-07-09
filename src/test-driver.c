@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <dirent.h>
 #include <expat.h>
 
 #include "razor.h"
@@ -487,7 +488,8 @@ end_test_element (void *data, const char *element)
 int main(int argc, char *argv[])
 {
 	struct test_context ctx;
-	const char *test_file;
+	const char *test_file, *srcdir;
+	char path[PATH_MAX];
 
 	memset(&ctx, 0, sizeof ctx);
 
@@ -501,16 +503,21 @@ int main(int argc, char *argv[])
 		argc--;
 		argv++;
 	}
+
+	srcdir = getenv("srcdir");
+	if (srcdir != NULL)
+		snprintf(path, sizeof path, "%s/test.xml", srcdir);
 	if (argc == 2)
 		test_file = argv[1];
 	else
-		test_file = "test.xml";
+		test_file = path;
+
+	fprintf(stderr, "test-driver: using %s\n", path);
 
 	parse_xml_file(test_file, start_test_element, end_test_element, &ctx);
 
-	if (ctx.errors) {
+	if (ctx.errors)
 		fprintf(stderr, "\n%d errors\n", ctx.errors);
-		return 1;
-	} else
-		return 0;
+
+	return 0;
 }
