@@ -86,6 +86,9 @@ gtkdocize --copy --flavour no-tmpl
 
 intltoolize --copy --force --automake                  || exit 1
 
+# Enough with the ChangeLog madness!
+sed -ie 's/ChangeLog//' po/Makefile.in.in
+
 conf_flags="--enable-maintainer-mode"
 
 if test x$NOCONFIGURE = x; then
