@@ -47,8 +47,8 @@ struct option {
  * command line.  For example, if -q or --query is present, -i no
  * longer means install, but info.  The way we handle this is by
  * setting all the options that may match (ie if -i is given we set
- * install and info), and then look at the relevent one depending on
- * what else in on the command line. */
+ * install and info), and then look at the relevant one depending on
+ * what else is on the command line. */
 
 static int option_all, option_list, option_whatrequires, option_whatprovides;
 static int option_package, option_file;
@@ -743,10 +743,17 @@ for_each_option(const struct option *options,
 	return count;
 }
 
+struct option_args {
+	const char **argv;
+	int argc, used;
+};
+
 static void
 handle_option(const struct option *o,
 	      const char *name, char short_name, void *data)
 {
+	struct option_args *args = data;
+
 	if (o->data == NULL) {
 		if (name)
 			printf("option --%s not supported\n", name);
@@ -761,7 +768,15 @@ handle_option(const struct option *o,
 		break;
 
 	case OPTION_STRING:
-		*(const char **) o->data = name + strlen(o->name) + 1;
+		if (args->argc == 0) {
+			if (name)
+				printf("--%s: missing argument\n", name);
+			else
+				printf("-%c: missing argument\n", short_name);
+			exit(1);
+		}
+		*(const char **) o->data = args->argv[0];
+		args->used = 1;
 		break;
 
 	case OPTION_LAST:
@@ -774,29 +789,39 @@ handle_option(const struct option *o,
 static int
 parse_options(const struct option *options, int argc, const char **argv)
 {
-	int i, j, k;
+	struct option_args args;
+	int i, j, k, next;
 
-	for (i = 1, j = 0; i < argc; i++) {
+	for (i = 1, j = 0; i < argc; i = next) {
+		next = i + 1;
 		if (argv[i][0] != '-') {
 			argv[j++] = argv[i];
 			continue;
 		}
 
 		if (argv[i][1] == '-') {
+			args.argv = &argv[next];
+			args.argc = argc - next;
+			args.used = 0;
 			if (for_each_option(options, &argv[i][2], 0,
-					    handle_option, NULL) == 0) {
+					    handle_option, &args) == 0) {
 				printf("unknown option: %s\n", argv[i]);
 				exit(1);
 			}
+			next += args.used;
 			continue;
 		}
 
 		for (k = 1; argv[i][k]; k++) {
+			args.argv = &argv[next];
+			args.argc = argc - next;
+			args.used = 0;
 			if (for_each_option(options, NULL, argv[i][k],
-					    handle_option, NULL) == 0) {
+					    handle_option, &args) == 0) {
 				printf("unknown option: -%c\n", argv[i][k]);
 				exit(1);
 			}
+			next += args.used;
 		}
 	}
 
