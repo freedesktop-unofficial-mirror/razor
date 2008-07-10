@@ -79,6 +79,10 @@ gtkdocize --copy --flavour no-tmpl
 	echo "Running autoheader..."
 	autoheader
       fi
+
+      # Create a ChangeLog to keep automake from panicing. 
+      echo "This file is a stub to keep automake happy." > ChangeLog
+
       echo "Running automake --gnu -Wno-portability $am_opt ..."
       automake --add-missing --gnu -Wno-portability $am_opt
       echo "Running autoconf ..."
