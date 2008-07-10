@@ -63,6 +63,8 @@ xlc )
   am_opt=--include-deps;;
 esac
 
+gtkdocize --copy --flavour no-tmpl
+
       aclocalinclude="$ACLOCAL_FLAGS"
 
       if grep "^AM_PROG_LIBTOOL" configure.ac >/dev/null; then
@@ -83,8 +85,6 @@ esac
       autoconf
 
 intltoolize --copy --force --automake                  || exit 1
-
-gtkdocize --copy --flavour no-tmpl
 
 conf_flags="--enable-maintainer-mode"
 
