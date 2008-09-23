@@ -21,8 +21,11 @@
 #include <stddef.h>
 #include <string.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <rpm/rpmlib.h>
 #include <rpm/rpmdb.h>
+#define _RPM_4_4_COMPAT 1
+#include <rpm/rpmlegacy.h>
 
 #include "razor.h"
 
@@ -62,10 +65,10 @@ rpm_to_razor_flags(uint32_t flags)
 static void
 add_properties(struct razor_importer *importer,
 	       uint32_t type_flags,
-	       Header h, int_32 name_tag, int_32 version_tag, int_32 flags_tag)
+	       Header h, int32_t name_tag, int32_t version_tag, int32_t flags_tag)
 {
 	union rpm_entry names, versions, flags;
-	int_32 i, type, count;
+	int32_t i, type, count;
 
 	headerGetEntry(h, name_tag, &type, &names.p, &count);
 	headerGetEntry(h, version_tag, &type, &versions.p, &count);
@@ -84,7 +87,7 @@ razor_set_create_from_rpmdb(void)
 	struct razor_importer *importer;
 	rpmdbMatchIterator iter;
 	Header h;
-	int_32 type, count, i;
+	int32_t type, count, i;
 	union rpm_entry name, epoch, version, release, arch;
 	union rpm_entry summary, description, url, license;
 	union rpm_entry basenames, dirnames, dirindexes;
