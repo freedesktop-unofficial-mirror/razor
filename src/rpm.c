@@ -349,11 +349,6 @@ get_query_packages(struct razor_set *set, int argc, const char *argv[])
 		exit(1);
 	}
 
-	files = "install/var/lib/razor/system-files.rzdb";
-	if (option_file)
-		if (razor_set_open_files(set, files))
-			exit(1);
-
 	query = razor_package_query_create(set);
 
 	if (option_all) {
@@ -478,16 +473,6 @@ command_query(int argc, const char *argv[])
 		option_all = 1;
 	} else {
 		set = razor_root_open_read_only(option_root);
-
-		/* FIXME: We need to figure out how to do this right. */
-		details = "install/var/lib/razor/system-details.rzdb";
-		if (option_info)
-			if (razor_set_open_details(set, details))
-				return;
-		files = "install/var/lib/razor/system-files.rzdb";
-		if (option_list)
-			if (razor_set_open_files(set, files))
-				return;
 	}
 
 	pi = get_query_packages(set, argc, argv);

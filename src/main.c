@@ -220,9 +220,6 @@ command_list_files(int argc, const char *argv[])
 	if (set == NULL)
 		return 1;
 
-	if (razor_set_open_files(set, "system-files.rzdb"))
-		return 1;
-
 	razor_set_list_files(set, argv[0]);
 	razor_set_destroy(set);
 
@@ -422,9 +419,7 @@ command_import_yum(int argc, const char *argv[])
 	set = razor_set_create_from_yum();
 	if (set == NULL)
 		return 1;
-	razor_set_write(set, rawhide_repo_filename, RAZOR_REPO_FILE_MAIN);
-	razor_set_write(set, "rawhide-details.rzdb", RAZOR_REPO_FILE_DETAILS);
-	razor_set_write(set, "rawhide-files.rzdb", RAZOR_REPO_FILE_FILES);
+	razor_set_write(set, rawhide_repo_filename, RAZOR_SECTION_ALL);
 	razor_set_destroy(set);
 	printf("wrote %s\n", rawhide_repo_filename);
 
@@ -508,9 +503,7 @@ command_update(int argc, const char *argv[])
 		return 1;
 
 	upstream = razor_set_open(rawhide_repo_filename);
-	if (upstream == NULL ||
-	    razor_set_open_details(upstream, "rawhide-details.rzdb") ||
-	    razor_set_open_files(upstream, "rawhide-files.rzdb"))
+	if (upstream == NULL)
 		return 1;
 
 	trans = razor_transaction_create(set, upstream);
@@ -531,7 +524,7 @@ command_update(int argc, const char *argv[])
 	}
 
 	set = razor_transaction_finish(trans);
-	razor_set_write(set, updated_repo_filename, RAZOR_REPO_FILE_MAIN);
+	razor_set_write(set, updated_repo_filename, RAZOR_SECTION_ALL);
 	razor_set_destroy(set);
 	razor_set_destroy(upstream);
 	printf("wrote system-updated.rzdb\n");
@@ -564,7 +557,7 @@ command_remove(int argc, const char *argv[])
 		return 1;
 
 	set = razor_transaction_finish(trans);
-	razor_set_write(set, updated_repo_filename, RAZOR_REPO_FILE_MAIN);
+	razor_set_write(set, updated_repo_filename, RAZOR_SECTION_ALL);
 	razor_set_destroy(set);
 	razor_set_destroy(upstream);
 	printf("wrote system-updated.rzdb\n");
@@ -659,9 +652,7 @@ command_import_rpms(int argc, const char *argv[])
 	printf("\nsaving\n");
 	set = razor_importer_finish(importer);
 
-	razor_set_write(set, repo_filename, RAZOR_REPO_FILE_MAIN);
-	razor_set_write(set, "system-details.rzdb", RAZOR_REPO_FILE_DETAILS);
-	razor_set_write(set, "system-files.rzdb", RAZOR_REPO_FILE_FILES);
+	razor_set_write(set, repo_filename, RAZOR_SECTION_ALL);
 	razor_set_destroy(set);
 	printf("wrote %s\n", repo_filename);
 
@@ -791,12 +782,10 @@ command_install(int argc, const char *argv[])
 
 	system = razor_root_get_system_set(root);
 	upstream = razor_set_open(rawhide_repo_filename);
-	if (upstream == NULL ||
-	    razor_set_open_details(upstream, "rawhide-details.rzdb") ||
-	    razor_set_open_files(upstream, "rawhide-files.rzdb")) {
-			fprintf(stderr, "couldn't open rawhide repo\n");
-			razor_root_close(root);
-			return 1;
+	if (upstream) {
+		fprintf(stderr, "couldn't open rawhide repo\n");
+		razor_root_close(root);
+		return 1;
 	}		
 
 	trans = razor_transaction_create(system, upstream);
@@ -958,9 +947,6 @@ command_search(int argc, const char *argv[])
 
 	set = razor_set_open(rawhide_repo_filename);
 	if (set == NULL)
-		return 1;
-
-	if (razor_set_open_details(set, "rawhide-details.rzdb"))
 		return 1;
 
 	pi = razor_package_iterator_create(set);

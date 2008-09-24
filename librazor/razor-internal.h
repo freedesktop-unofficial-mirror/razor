@@ -34,8 +34,8 @@
 #endif
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
-#define ALIGN(value, base) (((value) + (base - 1)) & ~((base) - 1))
-
+#define PADDING(value, base) (-(value) & (base - 1))
+#define ALIGN(value, base) ((value) + PADDING(value, base))
 void *zalloc(size_t size);
 
 struct array {
@@ -148,15 +148,7 @@ struct razor_set {
  	struct array file_pool;
 	struct array file_string_pool;
 	struct array details_string_pool;
-
-	struct razor_set_header *header;
-	size_t header_size;
-
-	struct razor_set_header *details_header;
-	size_t details_header_size;
-
-	struct razor_set_header *files_header;
-	size_t files_header_size;
+	struct razor_mapped_file *mapped_files;
 };
 
 struct import_entry {

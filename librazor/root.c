@@ -31,9 +31,6 @@
 #include "razor-internal.h"
 
 static const char system_repo_filename[] = "system.rzdb";
-static const char system_repo_details_filename[] = "system-details.rzdb";
-static const char system_repo_files_filename[] = "system-files.rzdb";
-
 static const char next_repo_filename[] = "system-next.rzdb";
 static const char razor_root_path[] = "/var/lib/razor";
 
@@ -41,7 +38,6 @@ struct razor_root {
 	struct razor_set *system;
 	struct razor_set *next;
 	int fd;
-	char root[PATH_MAX];
 	char path[PATH_MAX];
 	char new_path[PATH_MAX];
 };
@@ -51,7 +47,7 @@ razor_root_create(const char *root)
 {
 	struct stat buf;
 	struct razor_set *set;
-	char path[PATH_MAX], details_path[PATH_MAX], files_path[PATH_MAX];
+	char path[PATH_MAX];
 
 	assert (root != NULL);
 
@@ -83,18 +79,12 @@ razor_root_create(const char *root)
 	set = razor_set_create();
 	snprintf(path, sizeof path, "%s%s/%s",
 		 root, razor_root_path, system_repo_filename);
-	snprintf(details_path, sizeof details_path, "%s%s/%s",
-		 root, razor_root_path, system_repo_details_filename);
-	snprintf(files_path, sizeof files_path, "%s%s/%s",
-		 root, razor_root_path, system_repo_files_filename);
 	if (stat(path, &buf) == 0) {
 		fprintf(stderr,
 			"a razor install root is already initialized\n");
 		return -1;
 	}
-	if (razor_set_write(set, path, RAZOR_REPO_FILE_MAIN) < 0 ||
-	    razor_set_write(set, details_path, RAZOR_REPO_FILE_DETAILS) < 0 ||
-	    razor_set_write(set, files_path, RAZOR_REPO_FILE_FILES) < 0 ) {
+	if (razor_set_write(set, path, RAZOR_SECTION_ALL) < 0) {
 		fprintf(stderr, "could not write initial package set\n");
 		return -1;
 	}
@@ -107,7 +97,6 @@ RAZOR_EXPORT struct razor_root *
 razor_root_open(const char *root)
 {
 	struct razor_root *image;
-	char details_path[PATH_MAX], files_path[PATH_MAX];
 
 	assert (root != NULL);
 
@@ -135,19 +124,9 @@ razor_root_open(const char *root)
 
 	snprintf(image->path, sizeof image->path,
 		 "%s%s/%s", root, razor_root_path, system_repo_filename);
-	snprintf(details_path, sizeof details_path,
-		 "%s%s/%s", root, razor_root_path, system_repo_details_filename);
-	snprintf(files_path, sizeof files_path,
-		 "%s%s/%s", root, razor_root_path, system_repo_files_filename);
-
-	/* FIXME: We store the root path to make the hack in
-	 * razor_root_update() work.  Need to get rid of this. */
-	strcpy(image->root, root);
 
 	image->system = razor_set_open(image->path);
-	if (image->system == NULL ||
-	    razor_set_open_details(image->system, details_path) ||
-	    razor_set_open_files(image->system, files_path)) {
+	if (image->system == NULL) {
 		unlink(image->new_path);
 		close(image->fd);
 		free(image);
@@ -160,30 +139,14 @@ razor_root_open(const char *root)
 RAZOR_EXPORT struct razor_set *
 razor_root_open_read_only(const char *root)
 {
-	char path[PATH_MAX], details_path[PATH_MAX], files_path[PATH_MAX];
-	struct razor_set *set;
+	char path[PATH_MAX];
 
 	assert (root != NULL);
 
 	snprintf(path, sizeof path, "%s%s/%s",
 		 root, razor_root_path, system_repo_filename);
-	snprintf(details_path, sizeof details_path,
-		 "%s%s/%s", root, razor_root_path, system_repo_details_filename);
-	snprintf(files_path, sizeof files_path,
-		 "%s%s/%s", root, razor_root_path, system_repo_files_filename);
 
-
-	set = razor_set_open(path);
-	if (set == NULL)
-		return NULL;
-
-	if (razor_set_open_details(set, details_path) ||
-	    razor_set_open_files(set, files_path)) {
-		razor_set_destroy(set);
-		return NULL;
-	}
-
-	return set;
+	return razor_set_open(path);
 }
 
 RAZOR_EXPORT struct razor_set *
@@ -210,25 +173,11 @@ razor_root_close(struct razor_root *root)
 RAZOR_EXPORT void
 razor_root_update(struct razor_root *root, struct razor_set *next)
 {
-	char path[PATH_MAX];
-
 	assert (root != NULL);
 	assert (next != NULL);
 
-	razor_set_write_to_fd(next, root->fd, RAZOR_REPO_FILE_MAIN);
+	razor_set_write_to_fd(next, root->fd, RAZOR_SECTION_ALL);
 	root->next = next;
-
-	/* FIXME: This is a pretty bad hack that just overwrites the
-	 * system details and files rzdb files before the transaction
-	 * succeeds.  We need to fix this by merging the separate
-	 * details and files rzdb files back into the main rzdb
-	 * file. */
-	snprintf(path, sizeof path,
-		 "%s%s/%s", root->root, razor_root_path, system_repo_details_filename);
-	razor_set_write(next, path, RAZOR_REPO_FILE_DETAILS);
-	snprintf(path, sizeof path,
-		 "%s%s/%s", root->root, razor_root_path, system_repo_files_filename);
-	razor_set_write(next, path, RAZOR_REPO_FILE_FILES);
 
 	/* Sync the new repo file so the new package set is on disk
 	 * before we start upgrading. */

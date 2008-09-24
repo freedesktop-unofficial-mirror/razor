@@ -22,10 +22,11 @@
 
 #include <stdint.h>
 
-enum razor_repo_file_type {
-	RAZOR_REPO_FILE_MAIN,
-	RAZOR_REPO_FILE_DETAILS,
-	RAZOR_REPO_FILE_FILES
+enum razor_section_type {
+	RAZOR_SECTION_MAIN = 0x01,
+	RAZOR_SECTION_DETAILS = 0x02,
+	RAZOR_SECTION_FILES = 0x04,
+	RAZOR_SECTION_ALL = 0x07
 };
 
 enum razor_detail_type {
@@ -83,13 +84,11 @@ struct razor_property;
 struct razor_set *razor_set_create(void);
 struct razor_set *razor_set_open(const char *filename);
 void razor_set_destroy(struct razor_set *set);
-int razor_set_write_to_fd(struct razor_set *set, int fd,
-			  enum razor_repo_file_type type);
-int razor_set_write(struct razor_set *set, const char *filename,
-		    enum razor_repo_file_type type);
-
-int razor_set_open_details(struct razor_set *set, const char *filename);
-int razor_set_open_files(struct razor_set *set, const char *filename);
+int razor_set_write_to_fd(struct razor_set *set,
+			  int fd, uint32_t section_mask);
+int razor_set_write(struct razor_set *set,
+		    const char *filename, uint32_t setions);
+int razor_set_bind_sections(struct razor_set *set, const char *filename);
 
 struct razor_package *
 razor_set_get_package(struct razor_set *set, const char *package);
